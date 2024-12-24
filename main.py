@@ -1,122 +1,62 @@
 import os
-
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import streamlit as st
 from streamlit_option_menu import option_menu
+from gemini_utility import gemini_pro_vision_response
 
-from gemini_utility import (load_gemini_pro_model,
-                            gemini_pro_response,
-                            gemini_pro_vision_response,
-                            embeddings_model_response)
-
-
+# Get the working directory
 working_dir = os.path.dirname(os.path.abspath(__file__))
 
-# print(working_dir)
-
+# Streamlit page configuration
 st.set_page_config(
-    page_title="Gemini AI",
+    page_title="Caption Generator",
     page_icon="🤖",
     layout="centered",
 )
 
+# Sidebar menu
 with st.sidebar:
-    selected = option_menu('Gemini AI',
-                           ['ChatBot',
-                            'Image Captioning',
-                            'Embed text',
-                            'Ask me anything'],
-                           menu_icon='robot', icons=['chat-dots-fill', 'image-fill', 'textarea-t', 'patch-question-fill'],
-                           # default page selection.
-                           default_index=0
-                           )
+    selected = option_menu(
+        'Caption',
+        ['Image Captioning'],
+        menu_icon='robot',
+        icons=['chat-dots-fill', 'image-fill', 'textarea-t', 'patch-question-fill'],
+        default_index=0
+    )
 
-
-# Function to translate roles between Gemini-Pro and Streamlit terminology
-def translate_role_for_streamlit(user_role):
-    if user_role == "model":
-        return "assistant"
-    else:
-        return user_role
-
-
-# chatbot page
-if selected == 'ChatBot':
-    model = load_gemini_pro_model()
-
-     # Initialize chat session in Streamlit if not already present
-    if "chat_session" not in st.session_state:  # Renamed for clarity
-        st.session_state.chat_session = model.start_chat(history=[])
-
-    # Display the chatbot's title on the page
-    st.title("🤖 ChatBot")
-
-    # Display the chat history
-    for message in st.session_state.chat_session.history:
-        with st.chat_message(translate_role_for_streamlit(message.role)):
-            st.markdown(message.parts[0].text)
-
-    # Input field for user's message
-    user_prompt = st.chat_input("Ask Gemini-Pro...")  # Renamed for clarity
-    
-    if user_prompt:
-        # Add user's message to chat and display it
-        st.chat_message("user").markdown(user_prompt)
-
-        # Send user's message to Gemini-Pro and get the response
-        gemini_response = st.session_state.chat_session.send_message(user_prompt)  # Renamed for clarity  
-
-#         # Display Gemini-Pro's response
-        with st.chat_message("assistant"): 
-            st.markdown(gemini_response.text)
-
-
-# Image captioning page
+# Image Captioning page
 if selected == "Image Captioning":
-
     st.title("📷 Caption Generator")
 
+    # Image uploader
     uploaded_image = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])
 
+    # Generate Caption button
     if st.button("Generate Caption"):
-        image = Image.open(uploaded_image)
+        if uploaded_image is None:
+            st.error("Please upload an image file before generating a caption.")
+        else:
+            try:
+                # Open and process the uploaded image
+                image = Image.open(uploaded_image)
 
-        col1, col2 = st.columns(2)
+                # Display the image in a resized format
+                col1, col2 = st.columns(2)
+                with col1:
+                    resized_img = image.resize((800, 500))
+                    st.image(resized_img)
 
-        with col1:
-            resized_img = image.resize((800, 500))
-            st.image(resized_img)
+                # Define the default prompt for captioning
+                default_prompt = "Write a pro level suitable caption with proper hashtags for social media."
 
-        default_prompt = "write a suitable caption with hashtags for social media."  # change this prompt as per your requirement
+                # Get the caption using Gemini AI
+                caption = gemini_pro_vision_response(default_prompt, image)
 
-        # get the caption of the image from the gemini-1.5-flash LLM
-        caption = gemini_pro_vision_response(default_prompt, image)
+                # Display the generated caption
+                with col2:
+                    st.info(caption)
 
-        with col2:
-            st.info(caption)
-
-
-# text embedding model
-if selected == "Embed text":
-
-    st.title("🔡 Embed Text")
-
-    # text box to enter prompt
-    user_prompt = st.text_area(label='', placeholder="Enter the text to get embeddings")
-
-    if st.button("Get Response"):
-        response = embeddings_model_response(user_prompt)
-        st.markdown(response)
-
-
-# text embedding model
-if selected == "Ask me anything":
-
-    st.title("❓ Ask me a question")
-
-    # text box to enter prompt
-    user_prompt = st.text_area(label='', placeholder="Ask me anything...")
-
-    if st.button("Get Response"):
-        response = gemini_pro_response(user_prompt)
-        st.markdown(response)
+            except UnidentifiedImageError:
+                st.error("The uploaded file is not a valid image. Please upload a valid JPG, JPEG, or PNG file.")
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {e}")

@@ -18,49 +18,11 @@ GEMINI_API_KEY = config_data["GEMINI_API_KEY"]
 # configuring google.generativeai with API key
 genai.configure(api_key=GEMINI_API_KEY)
 
-# function to load gemini-pro-model for chatbot
-def load_gemini_pro_model():
-    gemini_pro_model = genai.GenerativeModel("gemini-pro")
-    return gemini_pro_model
-
-
 # get response from gemini-1.5-flash model - image/text to text
 def gemini_pro_vision_response(prompt, image):
     gemini_pro_vision_model = genai.GenerativeModel("gemini-1.5-flash")
     response = gemini_pro_vision_model.generate_content([prompt, image])
     result = response.text
     return result
-
-# image = Image.open("myimg.png")
-# result = gemini_pro_vision_response("write a suitable caption with hashtags for social media.", image)
-# print(result)
-# print("-"*50)
-
-
-# get response from embeddings model - text to embeddings
-def embeddings_model_response(input_text):
-    embedding_model = "models/embedding-001"
-    embedding = genai.embed_content(model=embedding_model,
-                                    content=input_text,
-                                    task_type="retrieval_document")
-    embedding_list = embedding["embedding"]
-    return embedding_list
-
-# result = embeddings_model_response("Machine Learning is a subset of Artificial Intelligence")
-# print(result)
-
-
-# get response from Gemini-Pro model - text to text
-def gemini_pro_response(user_prompt):
-    gemini_pro_model = genai.GenerativeModel("gemini-pro")
-    response = gemini_pro_model.generate_content(user_prompt)
-    result = response.text
-    return result
-
-
-# result = gemini_pro_response("What is Machine Learning")
-# print(result)
-# print("-"*50)
-#
 
 
