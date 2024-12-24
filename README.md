@@ -1,1 +1,2 @@
-# code-prep-gemini-ai-course
+# Caption Generation with Gemini-Pro (gemini-1.5-flash) model.
+You can check it here: 
